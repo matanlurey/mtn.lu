@@ -25,3 +25,4 @@ jobs:
           dst_path: /.
           dst_owner: matanlurey
           dst_repo_name: mtn.lu
+          dst_branch: build
