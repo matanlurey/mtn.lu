@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans&display=swap');
+
+:root {
+  --dark-bg-color: #20172b;
+  --light-bg-color: #40434f;
+  --dark-fg-color: #55646d;
+  --med-fg-color: #D0C2D3;
+  --light-fg-color: #f0f2f0;
+  --light-hl-color: #d0d0d0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* Long lines of text are hard to read. Setting a limit per-line. */
+  margin: 0 auto;
+  max-width: 50em;
+
+  /* More appealing default font. */
+  background: var(--dark-bg-color);
+  color: var(--med-fg-color);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Geneva, sans-serif;
+
+  /* More readable spacing. */
+  line-height: 1.5;
+  padding: 1em 0;
+  word-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--light-fg-color);
+  line-height: 1.3em;
+}
+
+h1 {
+  font-size: larger;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+h1 a {
+  color: var(--dark-fg-color);
+  text-decoration: none;
+}
+
+h1 a span {
+  color: var(--light-hl-color);
+}
+
+.h-card {
+  display: flex;
+  border-bottom: 1px dotted var(--dark-fg-color);
+  margin-bottom: 1em;
+}
+
+.h-card .u-photo {
+  border-radius: 50%;
+}
+
+.h-card aside {
+  flex: 1;
+  padding: 1em;
+}
+
+.h-card div {
+  flex: auto;
+}
+
+a {
+  color: var(--light-hl-color);
+}
+
+main {
+  margin: 0 1em;
+}
