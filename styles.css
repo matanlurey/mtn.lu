@@ -1,0 +1,64 @@
+body {
+  /* Off-White */
+  --primary-background-color: #f8f4f0;
+  /* Warm Beige */
+  --secondary-background-color: #eae0d5;
+  /* Dusty Rose */
+  --accent-color: #d59b86;
+  /* Dark Brown */
+  --primary-text-color: #504136;
+  /* Light Gray */
+  --secondary-text-color: #a8a197;
+}
+
+body[data-theme="dark"] {
+  /* Dark Charcoal */
+  --primary-background-color: #222831;
+  /* Lighter Gray */
+  --secondary-background-color: #393e46;
+  /* Teal */
+  --accent-color: #00adb5;
+  /* Light Beige */
+  --primary-text-color: #eeeeee;
+  /* Medium Gray */
+  --secondary-text-color: #726d64;
+}
+
+body[data-theme="dark"] [data-theme="light"] {
+  display: none;
+}
+
+body[data-theme="light"] [data-theme="dark"] {
+  display: none;
+}
+
+html {
+  font-family: "EB Garmond", serif;
+  font-size: 22px;
+  line-height: 1.3em;
+}
+
+body {
+  background-color: var(--primary-background-color);
+  color: var(--primary-text-color);
+  font-family: 'Open Sans', sans-serif;
+}
+
+a {
+  color: var(--accent-color);
+}
+
+button,
+[type="button"],
+[type="submit"],
+[type="reset"] {
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+}
+
+.icon {
+  fill: var(--accent-color);
+  width: 1em;
+  height: 1em;
+}
