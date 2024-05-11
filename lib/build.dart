@@ -12,7 +12,9 @@ Future<void> build({
 }) async {
   // Delete the output directory if it exists.
   final outputDir = io.Directory(outputPath);
-  await outputDir.delete(recursive: true);
+  if (await outputDir.exists()) {
+    await outputDir.delete(recursive: true);
+  }
 
   // Create the output directory.
   await outputDir.create(recursive: true);
