@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:mtnlu/template.dart';
 import 'package:path/path.dart' as p;
 
 /// Builds a static website into [outputPath].
@@ -7,6 +8,7 @@ Future<void> build({
   required String templatePath,
   required String outputPath,
   required String staticPath,
+  required Uri server,
 }) async {
   // Delete the output directory if it exists.
   final outputDir = io.Directory(outputPath);
@@ -32,5 +34,5 @@ Future<void> build({
   // Generate index.html file.
   final template = await io.File(templatePath).readAsString();
   final indexFile = io.File(p.join(outputPath, 'index.html'));
-  await indexFile.writeAsString(template);
+  await indexFile.writeAsString(index(template, server: server));
 }

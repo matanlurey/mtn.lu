@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:mtnlu/template.dart';
 import 'package:path/path.dart' as p;
 
 /// Previews the static site.
@@ -46,7 +47,13 @@ final class HttpPreviewServer {
         // Otherwise, serve the generated index.html file.
         final template = await io.File(templatePath).readAsString();
         request.response.headers.contentType = io.ContentType.html;
-        request.response.write(template);
+
+        final serverUrl = Uri(
+          scheme: 'http',
+          host: 'localhost',
+          port: server.port,
+        );
+        request.response.write(index(template, server: serverUrl));
         await request.response.flush();
         await request.response.close();
       }

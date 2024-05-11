@@ -46,6 +46,7 @@ void main(List<String> args) async {
       templatePath: templatePath,
       outputPath: outputPath,
       staticPath: staticPath,
+      server: Uri.parse(results['server'] as String),
     );
 
     io.stdout.writeln('Generated index.html in $outputPath');
@@ -87,5 +88,11 @@ ArgParser _parser({
       help: 'Directory to copy static files from',
       valueHelp: '/path/to/static',
       defaultsTo: p.join(rootPath, 'static'),
+    )
+    ..addOption(
+      'server',
+      help: 'URL of the server',
+      valueHelp: 'https://yoursite.dev',
+      defaultsTo: 'https://mtnlu.dev',
     );
 }

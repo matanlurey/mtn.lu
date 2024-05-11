@@ -15,27 +15,68 @@
       font-style: normal;
     }
 
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: black;
-        color: white;
-      }
+    @font-face {
+      src: url("/fonts/EB-Garmond-Regular.woff2") format("woff2");
+      font-family: "EB Garmond";
+      font-weight: 300;
+      font-style: normal;
     }
 
     body {
       max-width: 80ch;
       padding: 2ch;
+
+      /* Center the content */
       margin-left: auto;
       margin-right: auto;
+    }
+
+    header {
+      margin-bottom: 4ch;
+    }
+
+    header a {
+      text-decoration: none;
+    }
+
+    header a:hover {
+      text-decoration: underline;
+    }
+
+    header>nav {
+      display: flex;
+      column-gap: 2ch;
+
+      /* Aligns text to accomodate different font sizes and icons */
+      align-items: baseline;
+
+      /* Wrap on small screens */
+      flex-wrap: wrap;
+    }
+
+    header .title {
+      font-size: 1.25em;
+      flex-grow: 2;
     }
   </style>
   <link rel="stylesheet" href="/styles.css">
 </head>
 
-<body>
+<body data-theme="inherit">
   <header>
     <nav>
-      <a href="/">mtn.lu</a>
+      <a href="/" class="title">mtn.lu</a>
+      <a href="#">About</a>
+      <a href="#">Resume</a>
+      <a href="#">Links</a>
+      <button aria-label="Toggle Dark Mode" type="button" data-theme-toggle>
+        <svg class="icon" data-theme="dark">
+          <use xlink:href="/icons.svg#sun"></use>
+        </svg>
+        <svg class="icon" data-theme="light">
+          <use xlink:href="/icons.svg#moon"></use>
+        </svg>
+      </button>
     </nav>
   </header>
   <main>
@@ -44,6 +85,7 @@
   <footer>
 
   </footer>
+  <script src="/scripts.js"></script>
 </body>
 
 </html>
