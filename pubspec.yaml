@@ -1,0 +1,13 @@
+# Format: https://dart.dev/tools/pub/pubspec.
+
+name: mtnlu
+
+environment:
+  sdk: ^3.3.4
+
+dependencies:
+  args: ^2.5.0
+  path: ^1.9.0
+
+dev_dependencies:
+  oath: ^0.1.1
