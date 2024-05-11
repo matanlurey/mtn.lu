@@ -25,12 +25,14 @@ void main(List<String> args) async {
   final templatePath = results['template'] as String;
   final outputPath = results['output'] as String;
   final staticPath = results['static'] as String;
+  final contentPath = results['content'] as String;
 
   if (results['serve'] as bool) {
     final server = await HttpPreviewServer.start(
       templatePath: templatePath,
       outputPath: outputPath,
       staticPath: staticPath,
+      contentPath: contentPath,
     );
 
     io.stdout.writeln('Serving at http://localhost:${server.port}');
@@ -47,6 +49,7 @@ void main(List<String> args) async {
       outputPath: outputPath,
       staticPath: staticPath,
       server: Uri.parse(results['server'] as String),
+      contentPath: contentPath,
     );
 
     io.stdout.writeln('Generated index.html in $outputPath');
@@ -88,6 +91,13 @@ ArgParser _parser({
       help: 'Directory to copy static files from',
       valueHelp: '/path/to/static',
       defaultsTo: p.join(rootPath, 'static'),
+    )
+    ..addOption(
+      'content',
+      abbr: 'c',
+      help: 'Directory to read content files from',
+      valueHelp: '/path/to/content',
+      defaultsTo: p.join(rootPath, 'content'),
     )
     ..addOption(
       'server',

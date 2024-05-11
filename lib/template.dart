@@ -13,15 +13,16 @@ String render(String template, Map<String, String> values) {
   return template;
 }
 
-/// Generates a `index.html` file from a template.
-String index(
+/// Generates an HTML file from a template.
+String renderContent(
   String template, {
+  required String content,
   required Uri server,
 }) {
   return render(template, {
     'title': 'mtnlu',
     'description': 'Yet another programming blog by Matan Lurey.',
     'url': '$server',
-    'content': 'Hello World!',
+    'content': content,
   });
 }
