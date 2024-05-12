@@ -20,5 +20,5 @@
   });
 
   // Run highlight.js if installed.
-  hljs?.highlightAll();
+  window.hljs?.highlightAll();
 })();
