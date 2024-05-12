@@ -46,8 +46,10 @@ body {
 h1,
 h2,
 h3 {
+  color: var(--accent-color);
   font-family: 'Open Sans', sans-serif;
   font-size: 1.5rem;
+  font-weight: 300;
   text-rendering: optimizeLegibility;
   line-height: 1em;
 }
@@ -69,6 +71,10 @@ a {
   color: var(--accent-color);
 }
 
+header a {
+  color: var(--primary-text-color);
+}
+
 button,
 [type="button"],
 [type="submit"],
@@ -79,7 +85,137 @@ button,
 }
 
 .icon {
-  fill: var(--accent-color);
+  fill: var(--primary-text-color);
   width: 1em;
   height: 1em;
+}
+
+time {
+  display: block;
+  color: var(--secondary-text-color);
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1rem;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+ul h2 {
+  margin-top: 0;
+}
+
+ul>li {
+  margin-top: 1em;
+}
+
+ul a {
+  display: block;
+  text-decoration: none;
+}
+
+ul a:hover {
+  text-decoration: underline;
+}
+
+pre {
+  margin: 0;
+}
+
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+}
+
+code.hljs {
+  padding: 3px 5px
+}
+
+/* end baseline CSS */
+.hljs {
+  color: var(--primary-text-color);
+}
+
+.hljs-comment {
+  color: var(--secondary-text-color);
+}
+
+.hljs-tag,
+.hljs-punctuation {
+  color: var(--primary-text-color);
+}
+
+.hljs-tag .hljs-name,
+.hljs-tag .hljs-attr {
+  color: var(--accent-color);
+}
+
+.hljs-keyword,
+.hljs-attribute,
+.hljs-selector-tag,
+.hljs-meta .hljs-keyword,
+.hljs-doctag,
+.hljs-name {
+  font-weight: bold;
+}
+
+/* User color: hue: 0 */
+.hljs-type,
+.hljs-string,
+.hljs-number,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-quote,
+.hljs-template-tag,
+.hljs-deletion {
+  color: var(--accent-color);
+}
+
+.hljs-title,
+.hljs-section {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.hljs-regexp,
+.hljs-symbol,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-link,
+.hljs-selector-attr,
+.hljs-operator,
+.hljs-selector-pseudo {
+  color: var(--accent-color);
+}
+
+/* Language color: hue: 90; */
+.hljs-literal {
+  color: var(--accent-color);
+}
+
+.hljs-built_in,
+.hljs-bullet,
+.hljs-code,
+.hljs-addition {
+  color: var(--primary-text-color);
+}
+
+/* Meta color: hue: 200 */
+.hljs-meta {
+  color: var(--secondary-text-color);
+}
+
+.hljs-meta .hljs-string {
+  color: var(--secondary-text-color);
+}
+
+/* Misc effects */
+.hljs-emphasis {
+  font-style: italic
+}
+
+.hljs-strong {
+  font-weight: bold
 }

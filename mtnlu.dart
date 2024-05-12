@@ -30,7 +30,6 @@ void main(List<String> args) async {
   if (results['serve'] as bool) {
     final server = await HttpPreviewServer.start(
       templatePath: templatePath,
-      outputPath: outputPath,
       staticPath: staticPath,
       contentPath: contentPath,
     );

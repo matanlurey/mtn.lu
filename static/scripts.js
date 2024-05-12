@@ -18,4 +18,7 @@
     document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
     localStorage.setItem('darkMode', darkMode);
   });
+
+  // Run highlight.js if installed.
+  hljs?.highlightAll();
 })();
