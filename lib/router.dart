@@ -107,6 +107,21 @@ Future<String> _renderPost(String path) async {
   // Load the HTML content of the post.
   final content = await io.File(path).readAsString();
 
+  // Rename the path to be the URL.
+  // i.e. posts/2024-05-12-hello-world.html -> 2024/05/12/hello-world
+  var url = p.withoutExtension(
+    p.relative(
+      path,
+      from: p.join('content', 'posts'),
+    ),
+  );
+
+  // Replace - with / for the date in the URL (i.e. the first 3).
+  for (var i = 0; i < 3; i++) {
+    final index = url.indexOf('-');
+    url = url.replaceRange(index, index + 1, '/');
+  }
+
   // Parse the title and date from the content.
   //
   // <h1>Hello World</h1>
@@ -121,7 +136,7 @@ Future<String> _renderPost(String path) async {
     <li>
       <h2>
         <time datetime="$date">$dateName</time>
-        <a href="${p.withoutExtension(p.relative(path, from: 'content'))}">
+        <a href="$url">
           $title
         </a>
       </h2>
