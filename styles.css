@@ -124,6 +124,10 @@ pre {
   margin: 0;
 }
 
+pre code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
 pre code.hljs {
   display: block;
   overflow-x: auto;
