@@ -1,0 +1,184 @@
+<h1>Using libc with dart:ffi</h1>
+<time datetime="2024-05-19">May 19, 2024</time>
+
+<p>
+  In the earlier versions of Dart, the language had a fairly dogmatic world view:
+  Dart was <em>strictly</em> a cross-platform language, with <em>batteries
+    included</em> for web and server development. In other words, if Dart did
+  not provide a feature, you were out of luck.
+</p>
+
+<p>
+  For example, to write to <code>stdout</code> in Dart:
+</p>
+
+<pre><code class="language-dart">
+import 'dart:io' as io;
+
+void main() {
+  io.stdout.writeln('Hello, World!');
+}
+</code></pre>
+
+<p>
+  This meant that Dart was not
+  designed to let <em>users</em> directly interact with the underlying operating
+  system and was a <em>feature</em> of the language, not a bug; users could not
+  be "trusted" to write safe code (outside of a poorly supported feature called
+  <a href="https://fartlang.org/articles/dart-vm/native-extensions.html">native extensions</a>).
+</p>
+<p>
+  In March 2021, <a href="https://medium.com/dartlang/announcing-dart-2-12-499a6e689c87">Dart 2.12</a>
+  added a new library called <a href="https://dart.dev/guides/libraries/c-interop"><code>dart:ffi</code></a>,
+  which allowed Dart to interact with C libraries. This was a <em>huge</em> step
+  forward for Dart, as it allowed users to write code that interacted with
+  native code in a predictable way, and without using cumbersome techniques
+  like <a href="https://docs.flutter.dev/platform-integration/platform-channels">asynchronous plugins</a> or message
+  channels.
+</p>
+<p>
+  So let's get started. First, you need to have a <em>dynamic</em> C library
+  available. A dynamic library (or <em>shared library</em>) is precompiled code
+  that can be loaded into a running program. The default C library is typically
+  exported as global symbols, so we can access it in-process:
+</p>
+<pre><code class="language-dart">
+import 'dart:ffi';
+
+void main() {
+  final global = DynamicLibrary.process();
+
+  // To show this works, let's use the native 'time' function.
+  // https://man7.org/linux/man-pages/man2/time.2.html
+  final time = global.lookupFunction<
+    Int64 Function(Pointer<Int64>),
+    int Function(Pointer<Int64>)
+  >('time');
+
+  final now = time(nullptr);
+  print('The current time is $now.');
+}
+</code></pre>
+<p>
+  Nice! We just called a C function from Dart. But what if we wanted to write to
+  <code>stdout</code> instead? The C library provides a function called
+  <code>write</code> that can be used to write to a file descriptor. The file
+  descriptor for standard output is <code>1</code>, so let's change our code to
+  write to standard output:
+</p>
+<pre><code class="language-dart">
+import 'dart:ffi';
+
+void main() {
+  final global = DynamicLibrary.process();
+
+  final write = global.lookupFunction<
+    Int64 Function(Int32, Pointer<Uint8>, IntPtr),
+    int Function(int, Pointer<Uint8>, int)
+  >('write');
+
+  // Wait, what is this 'Pointer<Uint8>' type?
+}
+</code></pre>
+<p>
+  Writing the signature for the <code>write</code> function is almost as easy
+  as writing the signature for the <code>time</code> function, but now we have
+  a new type: <code>Pointer&lt;Uint8&gt;</code>. This type represents a pointer
+  to an array of 8-bit unsigned integers, or a buffer of bytes. We need to
+  convert a Dart string into a <em>native</em> buffer of bytes, which is not
+  possible with the Dart string type.
+</p>
+<p>
+  For this example, we'll create our own simple <a
+    href="https://api.flutter.dev/flutter/dart-ffi/Allocator-class.html"><code>Allocator</code></a> that uses the C
+  <code>malloc</code> and <code>free</code> functions. We'll use this allocator
+  to allocate a buffer of bytes, copy the string into the buffer, and then write
+  the buffer to standard output. Here is the above example ammended to include
+  the allocator:
+</p>
+<pre><code class="language-dart">
+import 'dart:ffi';
+
+void main() {
+  final global = DynamicLibrary.process();
+
+  final write = global.lookupFunction<
+    Int64 Function(Int32, Pointer<Uint8>, IntPtr),
+    int Function(int, Pointer<Uint8>, int)
+  >('write');
+  final malloc = global.lookupFunction<
+    Pointer Function(IntPtr),
+    Pointer Function(int)
+  >('malloc');
+  final free = global.lookupFunction<
+    Void Function(Pointer),
+    void Function(Pointer)
+  >('free');
+
+  final allocate = _Allocator(malloc, free);
+}
+
+final class _Allocator implements Allocator {
+  const _Allocator(this._malloc, this._free);
+
+  final Pointer Function(int) _malloc;
+  final void Function(Pointer) _free;
+
+  @override
+  Pointer<T> allocate<T extends NativeType>(int byteCount, {int? alignment}) {
+    final pointer = _malloc(byteCount);
+    if (pointer.address == 0) {
+      throw ArgumentError('Could not allocate $byteCount bytes.');
+    }
+    return pointer.cast();
+  }
+
+  @override
+  void free(Pointer pointer) {
+    _free(pointer);
+  }
+}
+</code></pre>
+<p>
+  Now that we have an allocator, we can allocate a buffer of bytes, copy the
+  string into the buffer, and then write the buffer to standard output. Here is
+  a snippet of code that does just that:
+</p>
+<pre><code class="language-dart">
+import 'dart:ffi';
+
+void main() {
+  // ...
+
+  // Allocate a buffer of bytes and copy the string into the buffer.
+  final bytes = 'Hello, World!\n'.codeUnits;
+  final buffer = allocate<Uint8>(bytes.length);
+  buffer.asTypedList(bytes.length).setAll(0, bytes);
+
+  // Write the buffer to standard output.
+  const stdout = 1;
+  write(stdout, buffer, bytes.length);
+
+  // Free the buffer.
+  allocate.free(buffer);
+}
+</code></pre>
+<p>
+  Of course, this is not terribly useful (see also the
+  <a href="https://gist.github.com/matanlurey/dbd6aa04fa17cccdc8680e3ac10d6b63">complete example</a>), but I'm hoping it
+  will be a good
+  introduction to the topic. In the future, I plan to write more about using
+  <code>dart:ffi</code> to access native APIs otherwise unavailable in
+  <code>dart:io</code>. In the meantime, check out these other great resources
+  on the topic:
+<ul>
+  <li><a href="https://dart.dev/interop/c-interop">C interop using dart:ffi</a>, Dart's official introduction to the
+    topic.</li>
+  <li><a href="https://pub.dev/packages/ffi"><code>package:ffi</code></a>, which includes a <code>malloc</code>
+    implementation and even works on Windows.</li>
+  <li><a href="https://pub.dev/packages/stdlibc"><code>package:stdlibc</code></a>,
+    out-of-the-box standard C library access, by the Canonical team.</li>
+</ul>
+</p>
+
+<script src="/highlight.min.js"></script>

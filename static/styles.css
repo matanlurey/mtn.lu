@@ -38,6 +38,10 @@ html {
   line-height: 1.3em;
 }
 
+code {
+  font-size: 0.9em;
+}
+
 body {
   background-color: var(--primary-background-color);
   color: var(--primary-text-color);
@@ -118,6 +122,15 @@ ul a {
 
 ul a:hover {
   text-decoration: underline;
+}
+
+main ul {
+  list-style-type: disc;
+  margin-left: 1.5em;
+}
+
+main ul a {
+  display: inline;
 }
 
 pre {
