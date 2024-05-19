@@ -150,6 +150,8 @@ void main() {
     int Function(Pointer<Int64>)
   >('time');
 
+  // time() takes an optional argument, which we'll ignore.
+  // let's use the equivalent of NULL in C, which is provided by dart:ffi.
   final now = time(nullptr);
   print('The current time is $now.');
 }
