@@ -73,9 +73,11 @@ final class SiteRouter {
       if (path == 'index') {
         // Find all of the blog posts in the content directory.
         final posts = [
-          for (final entity in await io.Directory(p.join(_contentPath, 'posts'))
-              .list()
-              .toList())
+          for (final entity
+              in await io.Directory(p.join(_contentPath, 'posts'))
+                  .list()
+                  .toList()
+                ..sort((a, b) => b.path.compareTo(a.path)))
             if (entity is io.File && entity.path.endsWith('.html')) entity.path,
         ];
 
