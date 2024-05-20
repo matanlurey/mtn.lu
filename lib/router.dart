@@ -83,8 +83,11 @@ final class SiteRouter {
 
         content = renderContent(
           content,
-          content:
-              '<ul>${(await Future.wait(posts.map(_renderPost))).join()}</ul>',
+          // ignore: noop_primitive_operations
+          content: ''
+              '<section class="articles">'
+              '<ul>${(await Future.wait(posts.map(_renderPost))).join()}</ul>'
+              '</section>',
           server: _baseUri,
         );
       }
