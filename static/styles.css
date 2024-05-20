@@ -102,9 +102,13 @@ time {
 }
 
 ul {
-  margin: 0;
+  margin: 0 0 0 1.5em;
   padding: 0;
-  list-style-type: none;
+  list-style-type: disc;
+}
+
+ul a {
+  text-decoration: none;
 }
 
 ul h2 {
@@ -116,7 +120,6 @@ ul>li {
 }
 
 ul a {
-  display: block;
   text-decoration: none;
 }
 
@@ -124,13 +127,13 @@ ul a:hover {
   text-decoration: underline;
 }
 
-main :not(.articles) ul {
-  list-style-type: disc;
-  margin-left: 1.5em;
+main .articles ul {
+  margin: 0;
+  list-style-type: none;
 }
 
-main :not(.articles) ul a {
-  display: inline;
+main .articles ul a {
+  display: block;
 }
 
 pre {
