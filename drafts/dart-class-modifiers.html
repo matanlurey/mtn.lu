@@ -49,11 +49,23 @@
       margin-bottom: 4ch;
     }
 
-    header a {
+    header a,
+    h1 a,
+    h2 a,
+    h3 a,
+    h4 a,
+    h5 a,
+    h6 a {
       text-decoration: none;
     }
 
-    header a:hover {
+    header a:hover,
+    h1 a:hover,
+    h2 a:hover,
+    h3 a:hover,
+    h4 a:hover,
+    h5 a:hover,
+    h6 a:hover {
       text-decoration: underline;
     }
 
@@ -80,19 +92,19 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 
-<body data-theme="inherit">
+<body>
   <header>
     <nav>
       <a href="/" class="title" title="Home">mtn.lu</a>
       <a href="/about">About</a>
-      <button aria-label="Toggle Dark Mode" type="button" data-theme-toggle>
+      <a href="/no-script#dark-mode" aria-label="Toggle Dark Mode" type="button" data-theme-toggle>
         <svg class="icon" data-theme="dark">
           <use xlink:href="/icons.svg#sun"></use>
         </svg>
         <svg class="icon" data-theme="light">
           <use xlink:href="/icons.svg#moon"></use>
         </svg>
-      </button>
+      </a>
     </nav>
   </header>
   <main>
