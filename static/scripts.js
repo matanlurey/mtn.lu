@@ -13,7 +13,8 @@
   document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
 
   // Toggle the theme.
-  document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+  document.querySelector('[data-theme-toggle]').addEventListener('click', (e) => {
+    e.preventDefault();
     darkMode = !darkMode;
     document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
     localStorage.setItem('darkMode', darkMode);

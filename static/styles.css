@@ -11,6 +11,7 @@ body {
   --secondary-text-color: #a8a197;
 }
 
+/* When the user prefers dark mode */
 body[data-theme="dark"] {
   /* Dark Charcoal */
   --primary-background-color: #222831;
@@ -24,12 +25,39 @@ body[data-theme="dark"] {
   --secondary-text-color: #726d64;
 }
 
+/* When the browser preference is dark mode and JS is disabled */
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) {
+    --primary-background-color: #222831;
+    --secondary-background-color: #393e46;
+    --accent-color: #00adb5;
+    --primary-text-color: #eeeeee;
+    --secondary-text-color: #726d64;
+  }
+}
+
+/* When the user prefers dark mode */
 body[data-theme="dark"] [data-theme="light"] {
   display: none;
 }
 
+/* When the browser preference is dark mode and JS is disabled */
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme]) [data-theme="light"] {
+    display: none;
+  }
+}
+
+/* When the user prefers light mode */
 body[data-theme="light"] [data-theme="dark"] {
   display: none;
+}
+
+/* When the browser preference is light mode and JS is disabled */
+@media (prefers-color-scheme: light) {
+  body:not([data-theme]) [data-theme="dark"] {
+    display: none;
+  }
 }
 
 html {
@@ -90,8 +118,8 @@ button,
 
 .icon {
   fill: var(--primary-text-color);
-  width: 1em;
-  height: 1em;
+  width: 0.7em;
+  height: 0.7em;
 }
 
 time {
