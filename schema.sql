@@ -19,4 +19,4 @@ CREATE TABLE magic_links (
 );
 
 -- Seed data for testing
-INSERT INTO users (email) VALUES ('admin@mtn.lu');
+INSERT INTO users (email) VALUES ('matan@lurey.org');
