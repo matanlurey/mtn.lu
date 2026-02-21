@@ -19,9 +19,14 @@ What it does:
 ### Database
 
 ```bash
-just db         # Start Postgres (skips if already running)
-just db-stop    # Stop Postgres
+just db         # Start Postgres & pgAdmin (skips if already running)
+just db-stop    # Stop Postgres & pgAdmin
+just db-init    # Wipe and re-initialize the schema (uses schema.sql)
 ```
+
+Once running, you can access:
+- **Postgres**: `localhost:5432`
+- **pgAdmin**: `http://localhost:5050` (Login: `admin@mtn.lu` / `password123`)
 
 ### Running the App
 

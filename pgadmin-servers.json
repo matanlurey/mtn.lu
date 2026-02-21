@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "mtn.lu local",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "mtn_lu",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}
