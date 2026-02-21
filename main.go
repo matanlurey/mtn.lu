@@ -9,8 +9,11 @@ import (
 	"log"
 	"net/http"
 	"net/smtp"
+	"os"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	"github.com/caarlos0/env/v11"
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
@@ -178,13 +181,10 @@ var pageTmpl = template.Must(template.New("page").Parse(`<!DOCTYPE html>
 </body>
 </html>`))
 
-func main() {
-	cfg := loadConfigFromEnv()
-	db := connectDB(cfg.DatabaseURL)
-	defer db.Close()
-
+// registerRoutes registers all HTTP handlers on the given mux.
+func registerRoutes(mux *http.ServeMux, cfg Config, db *sql.DB) {
 	// Home page: show login form or logged-in state.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
@@ -198,8 +198,8 @@ func main() {
 		pageTmpl.Execute(w, data)
 	})
 
-	// Login: validate email exists, create magic link, "send" email.
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+	// Login: validate email exists, create magic link, send email.
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -253,7 +253,7 @@ func main() {
 	})
 
 	// Verify: validate the magic link token and issue a JWT.
-	http.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
 		if token == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -330,7 +330,7 @@ func main() {
 	})
 
 	// Logout: clear the JWT cookie.
-	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -345,10 +345,26 @@ func main() {
 		})
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
+}
 
-	addr := fmt.Sprintf(":%d", cfg.Port)
-	log.Printf("Listening on %s", cfg.BaseURL)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("Server error: %v", err)
+func main() {
+	cfg := loadConfigFromEnv()
+	db := connectDB(cfg.DatabaseURL)
+	defer db.Close()
+
+	mux := http.NewServeMux()
+	registerRoutes(mux, cfg, db)
+
+	// If running in AWS Lambda, use the Lambda handler.
+	// Otherwise, run as a standard HTTP server.
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+		log.Println("Running in Lambda mode")
+		lambda.Start(httpadapter.NewV2(mux).ProxyWithContext)
+	} else {
+		addr := fmt.Sprintf(":%d", cfg.Port)
+		log.Printf("Listening on %s", cfg.BaseURL)
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			log.Fatalf("Server error: %v", err)
+		}
 	}
 }

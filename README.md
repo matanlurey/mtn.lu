@@ -32,5 +32,38 @@ Once running, you can access:
 ### Running the App
 
 ```bash
-just run        # Run the app (will warn if Postgres is not running)
+just run        # Run the app locally (will warn if Postgres is not running)
 ```
+
+## Deployment (AWS via SST)
+
+This project uses [SST Ion](https://sst.dev) to deploy to AWS. SST manages:
+- The **Lambda** function running the Go app.
+- The **RDS Postgres** database inside a VPC.
+- All **IAM roles** and **networking** automatically.
+
+### Install SST
+```bash
+curl -fsSL https://sst.dev/install | bash
+```
+
+### Set Secrets (one-time)
+```bash
+sst secret set JwtSecret <a-long-random-string>
+sst secret set DbPassword <a-strong-password>
+sst secret set SmtpUser <ses-smtp-username>
+sst secret set SmtpPass <ses-smtp-password>
+```
+
+### Deploy
+```bash
+just deploy       # Deploy to production
+just deploy-dev   # Deploy a personal dev stage
+just destroy      # Remove all dev AWS resources
+```
+
+### Stages
+| Stage | Purpose |
+| :--- | :--- |
+| `production` | Live site at `mtn.lu`. Resources are protected from accidental deletion. |
+| `dev` | Personal sandbox. Resources are removed on `just destroy`. |

@@ -30,3 +30,15 @@ db-init: db
     @echo "Resetting database schema..."
     @docker exec -i mtn-postgres psql -U postgres -d mtn_lu < schema.sql
     @echo "Database initialized with fresh schema."
+
+# Deploy to AWS (production)
+deploy:
+    sst deploy --stage production
+
+# Deploy to a personal dev stage on AWS (for testing)
+deploy-dev:
+    sst deploy --stage dev
+
+# Remove all AWS resources for a given stage
+destroy:
+    sst remove --stage dev
