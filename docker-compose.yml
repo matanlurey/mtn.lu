@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: mtn-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: mtn_lu
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.dev/db:/var/lib/postgresql/data
