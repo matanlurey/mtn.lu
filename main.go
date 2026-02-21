@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/smtp"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -21,6 +22,11 @@ type Config struct {
 	JWTSecret   string `env:"JWT_SECRET" envDefault:"dev_secret_do_not_use_in_prod"`
 	BaseURL     string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://postgres:password123@localhost:5432/mtn_lu?sslmode=disable"`
+	SMTPHost    string `env:"SMTP_HOST" envDefault:"localhost"`
+	SMTPPort    string `env:"SMTP_PORT" envDefault:"1025"`
+	SMTPUser    string `env:"SMTP_USER"`
+	SMTPPass    string `env:"SMTP_PASS"`
+	SMTPFrom    string `env:"SMTP_FROM" envDefault:"no-reply@mtn.lu"`
 }
 
 // User represents a row in the users table.
@@ -107,9 +113,30 @@ func getUserFromJWT(r *http.Request, secret string) (string, bool) {
 	return email, ok
 }
 
-// sendMagicLinkEmail is a stub that logs the magic link instead of sending an email.
-func sendMagicLinkEmail(email string, link string) error {
-	log.Printf("[STUB] Would send magic link to %s: %s", email, link)
+// sendMagicLinkEmail sends a magic link email via SMTP.
+func sendMagicLinkEmail(cfg Config, toEmail string, link string) error {
+	subject := "Your mtn.lu login link"
+	body := fmt.Sprintf("Click here to log in:\n\n%s\n\nThis link expires in 15 minutes.", link)
+	msg := fmt.Sprintf(
+		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
+		cfg.SMTPFrom, toEmail, subject, body,
+	)
+
+	addr := cfg.SMTPHost + ":" + cfg.SMTPPort
+
+	// Use authentication only if credentials are provided (production/SES).
+	// Mailpit (local dev) does not require authentication.
+	var auth smtp.Auth
+	if cfg.SMTPUser != "" {
+		auth = smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPHost)
+	}
+
+	err := smtp.SendMail(addr, auth, cfg.SMTPFrom, []string{toEmail}, []byte(msg))
+	if err != nil {
+		log.Printf("Failed to send email to %s: %v", toEmail, err)
+		return err
+	}
+	log.Printf("Sent login email to %s", toEmail)
 	return nil
 }
 
@@ -213,9 +240,13 @@ func main() {
 			return
 		}
 
-		// Send the magic link (stub).
+		// Send the magic link email.
 		link := fmt.Sprintf("%s/verify?token=%s", cfg.BaseURL, token)
-		sendMagicLinkEmail(user.Email, link)
+		if err := sendMagicLinkEmail(cfg, user.Email, link); err != nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			pageTmpl.Execute(w, PageData{Error: "Failed to send login email. Please try again."})
+			return
+		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		pageTmpl.Execute(w, PageData{Message: "Check your email for a login link."})

@@ -27,6 +27,7 @@ just db-init    # Wipe and re-initialize the schema (uses schema.sql)
 Once running, you can access:
 - **Postgres**: `localhost:5432`
 - **pgAdmin**: `http://localhost:5050` (Login: `admin@mtn.lu` / `password123`)
+- **Mailpit**: `http://localhost:8025` (catches all outgoing emails)
 
 ### Running the App
 

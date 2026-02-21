@@ -4,10 +4,12 @@ db:
     if [ "$(docker inspect -f '{{{{.State.Running}}}}' mtn-postgres 2>/dev/null)" = "true" ]; then
         echo "Postgres is already running on localhost:5432"
         echo "pgAdmin is already running on http://localhost:5050"
+        echo "Mailpit is already running on http://localhost:8025"
     else
         docker compose up -d
         echo "Postgres is running on localhost:5432"
         echo "pgAdmin is starting on http://localhost:5050 (Login: admin@mtn.lu / password123)"
+        echo "Mailpit is starting on http://localhost:8025"
     fi
 
 # Stop the database

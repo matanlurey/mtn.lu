@@ -22,3 +22,10 @@ services:
     volumes:
       - ./.dev/pgadmin:/var/lib/pgadmin
       - ./pgadmin-servers.json:/pgadmin4/servers.json
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: mtn-mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP server
