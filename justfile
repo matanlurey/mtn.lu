@@ -1,7 +1,7 @@
 # Start the database and pgAdmin if not already running
 services-start:
     #!/usr/bin/env bash
-    if [ "$(docker inspect -f '{{{{.State.Running}}}}' mtn-postgres 2>/dev/null)" = "true" ]; then
+    if [ -n "$(docker ps -q -f name=mtn-postgres -f status=running)" ]; then
         echo "Services are already running."
     else
         docker compose up -d --remove-orphans
@@ -18,15 +18,15 @@ services-stop:
 # Run main.go
 run:
     #!/usr/bin/env bash
-    if [ "$(docker inspect -f '{{{{.State.Running}}}}' mtn-postgres 2>/dev/null)" != "true" ]; then
+    if [ -z "$(docker ps -q -f name=mtn-postgres -f status=running)" ]; then
         echo "Warning: Postgres is not running. Start it with: just services-start"
     fi
+    go run main.go
 
-# Nuclear reset: Re-initialize the schema (wipes all data!)
+# Nuclear reset: Delete all data
 db-reset:
-    @echo "Resetting database schema..."
-    @docker exec -i mtn-postgres psql -U postgres -d mtn_lu < schema.sql
-    @echo "Database initialized with fresh schema."
+    @echo "Resetting database..."
+    @docker exec -i mtn-postgres psql -U postgres -d mtn_lu < reset.sql
 
 # Deploy to AWS (production)
 deploy-prod:

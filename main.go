@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"database/sql"
+	_ "embed"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -18,6 +20,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
 )
+
+//go:embed schema.sql
+var schemaSQL string
 
 // Config configures the running application.
 type Config struct {
@@ -62,7 +67,23 @@ func connectDB(databaseURL string) *sql.DB {
 	}
 	log.Println("Connected to database")
 
+	// Initialize schema on startup (idempotent).
+	initSchema(db)
+
 	return db
+}
+
+func initSchema(db *sql.DB) {
+	for _, stmt := range strings.Split(schemaSQL, ";") {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" {
+			continue
+		}
+		if _, err := db.Exec(stmt); err != nil {
+			log.Fatalf("Failed to run schema statement: %v\n%s", err, stmt)
+		}
+	}
+	log.Println("Schema initialized")
 }
 
 // generateToken creates a cryptographically secure random token.
