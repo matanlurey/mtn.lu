@@ -19,9 +19,9 @@ What it does:
 ### Database
 
 ```bash
-just db         # Start Postgres & pgAdmin (skips if already running)
-just db-stop    # Stop Postgres & pgAdmin
-just db-init    # Wipe and re-initialize the schema (uses schema.sql)
+just services=start # Start Postgres & pgAdmin (skips if already running)
+just services-stop  # Stop Postgres & pgAdmin
+just db-reset       # Wipe and re-initialize the schema (uses schema.sql)
 ```
 
 Once running, you can access:
@@ -32,7 +32,7 @@ Once running, you can access:
 ### Running the App
 
 ```bash
-just run        # Run the app locally (will warn if Postgres is not running)
+just run           # Run the app locally (will warn if Postgres is not running)
 ```
 
 ## Deployment (AWS via SST)
@@ -57,9 +57,10 @@ sst secret set SmtpPass <ses-smtp-password>
 
 ### Deploy
 ```bash
-just deploy       # Deploy to production
-just deploy-dev   # Deploy a personal dev stage
-just destroy      # Remove all dev AWS resources
+just deploy-prod   # Deploy to production
+just deploy-dev    # Deploy a personal dev stage
+just destroy-prod  # Remove all production AWS resources
+just destroy-dev   # Remove all dev AWS resources
 ```
 
 ### Stages

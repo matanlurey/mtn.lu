@@ -1,44 +1,45 @@
 # Start the database and pgAdmin if not already running
-db:
+services-start:
     #!/usr/bin/env bash
     if [ "$(docker inspect -f '{{{{.State.Running}}}}' mtn-postgres 2>/dev/null)" = "true" ]; then
-        echo "Postgres is already running on localhost:5432"
-        echo "pgAdmin is already running on http://localhost:5050"
-        echo "Mailpit is already running on http://localhost:8025"
+        echo "Services are already running."
     else
-        docker compose up -d
+        docker compose up -d --remove-orphans
         echo "Postgres is running on localhost:5432"
         echo "pgAdmin is starting on http://localhost:5050 (Login: admin@mtn.lu / password123)"
         echo "Mailpit is starting on http://localhost:8025"
     fi
 
 # Stop the database
-db-stop:
+services-stop:
     docker compose down
-    @echo "Postgres stopped"
+    @echo "Services stopped"
 
 # Run main.go
 run:
     #!/usr/bin/env bash
     if [ "$(docker inspect -f '{{{{.State.Running}}}}' mtn-postgres 2>/dev/null)" != "true" ]; then
-        echo "Warning: Postgres is not running. Start it with: just db"
+        echo "Warning: Postgres is not running. Start it with: just services-start"
     fi
-    go run main.go
 
 # Nuclear reset: Re-initialize the schema (wipes all data!)
-db-init: db
+db-reset:
     @echo "Resetting database schema..."
     @docker exec -i mtn-postgres psql -U postgres -d mtn_lu < schema.sql
     @echo "Database initialized with fresh schema."
 
 # Deploy to AWS (production)
-deploy:
+deploy-prod:
     sst deploy --stage production
+
+# Remove all AWS resources for production stage
+destroy-prod:
+    sst remove --stage production
 
 # Deploy to a personal dev stage on AWS (for testing)
 deploy-dev:
     sst deploy --stage dev
 
-# Remove all AWS resources for a given stage
-destroy:
+# Remove all AWS resources for the dev stage
+destroy-dev:
     sst remove --stage dev

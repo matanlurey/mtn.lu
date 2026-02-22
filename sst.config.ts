@@ -1,4 +1,6 @@
 /// <reference path="./.sst/platform/config.d.ts" />
+///
+/// TIP: Use "sst install" to install the required dependencies for this file.
 
 export default $config({
   app(input) {
@@ -35,6 +37,7 @@ export default $config({
       link: [db, jwtSecret],
       environment: {
         DATABASE_URL: $interpolate`postgres://postgres:${dbPassword.value}@${db.host}:${db.port}/mtn_lu`,
+        INIT_DB: "true",
         JWT_SECRET: jwtSecret.value,
         BASE_URL: "https://mtn.lu",
         SMTP_HOST: "email-smtp.us-east-1.amazonaws.com",

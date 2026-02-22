@@ -1,5 +1,5 @@
 services:
-  db:
+  postgres:
     image: postgres:latest
     container_name: mtn-postgres
     environment:
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./.dev/db:/var/lib/postgresql
+      - ./.dev/postgres:/var/lib/postgresql
 
   pgadmin:
     image: dpage/pgadmin4
@@ -27,5 +27,5 @@ services:
     image: axllent/mailpit
     container_name: mtn-mailpit
     ports:
-      - "8025:8025"   # Web UI
-      - "1025:1025"   # SMTP server
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP server
