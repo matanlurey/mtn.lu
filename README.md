@@ -10,37 +10,61 @@ What it does:
 
 ## Requirements
 
-- [Go](https://go.dev/dl/) (1.21+)
+- [Go](https://go.dev/dl/) (1.25+)
 - [just](https://github.com/casey/just) — task runner (`brew install just`)
-- [Docker](https://www.docker.com/products/docker-desktop/) or [OrbStack](https://orbstack.dev/) — to run Postgres locally
+- [Docker](https://www.docker.com/products/docker-desktop/) or [OrbStack](https://orbstack.dev/) — to run DynamoDB Local
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) — to create local tables
 
 ## Development
 
-### Database
+### Services
 
 ```bash
-just services=start # Start Postgres & pgAdmin (skips if already running)
-just services-stop  # Stop Postgres & pgAdmin
-just db-reset       # Wipe and re-initialize the schema (uses schema.sql)
+just services-start # Start DynamoDB Local & Mailpit (creates tables automatically)
+just services-stop  # Stop all services
+just db-reset       # Wipe and recreate the tables
 ```
 
 Once running, you can access:
-- **Postgres**: `localhost:5432`
-- **pgAdmin**: `http://localhost:5050` (Login: `admin@mtn.lu` / `password123`)
+- **DynamoDB Local**: `http://localhost:8000`
 - **Mailpit**: `http://localhost:8025` (catches all outgoing emails)
 
 ### Running the App
 
 ```bash
-just run           # Run the app locally (will warn if Postgres is not running)
+just run           # Run the app locally
 ```
+
+The app auto-detects local vs Lambda — when not running in Lambda, it connects to DynamoDB Local at `localhost:8000` with dummy credentials.
+
+### DynamoDB Schema
+
+Two tables, both using on-demand billing:
+
+**`users`** — Primary key: `email`
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `email` | String (PK) | User's email address |
+| `permissions` | Number | Bit flags (1 = admin) |
+| `createdAt` | String | ISO 8601 timestamp |
+
+**`links`** — Primary key: `token`, GSI: `email-index` (email + createdAt)
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `token` | String (PK) | Random hex token |
+| `email` | String | User's email address |
+| `createdAt` | String | ISO 8601 timestamp |
+| `expiresAt` | Number | Unix timestamp (TTL — auto-deleted by DynamoDB) |
+| `usedAt` | String | ISO 8601 timestamp (empty if unused) |
 
 ## Deployment (AWS via SST)
 
 This project uses [SST Ion](https://sst.dev) to deploy to AWS. SST manages:
 - The **Lambda** function running the Go app.
-- The **RDS Postgres** database inside a VPC.
-- All **IAM roles** and **networking** automatically.
+- Two **DynamoDB** tables (`users` and `links`).
+- All **IAM roles** automatically.
+
+No VPC, NAT gateway, or connection pooling required.
 
 ### Install SST
 ```bash
@@ -49,10 +73,10 @@ curl -fsSL https://sst.dev/install | bash
 
 ### Set Secrets (one-time)
 ```bash
-sst secret set JwtSecret <a-long-random-string>
-sst secret set DbPassword <a-strong-password>
-sst secret set SmtpUser <ses-smtp-username>
-sst secret set SmtpPass <ses-smtp-password>
+sst secret set JWT_SECRET <a-long-random-string>
+sst secret set SMTP_USER <ses-smtp-username>
+sst secret set SMTP_PASS <ses-smtp-password>
+sst secret set ADMIN_USER <admin-email-address>
 ```
 
 ### Deploy
@@ -67,4 +91,4 @@ just destroy-dev   # Remove all dev AWS resources
 | Stage | Purpose |
 | :--- | :--- |
 | `production` | Live site at `mtn.lu`. Resources are protected from accidental deletion. |
-| `dev` | Personal sandbox. Resources are removed on `just destroy`. |
+| `dev` | Personal sandbox. Resources are removed on `just destroy-dev`. |

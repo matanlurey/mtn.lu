@@ -13,7 +13,7 @@ export default $config({
   },
 
   async run() {
-    const jwtSecret = new sst.Secret("JwtSecret");
+    const jwtSecret = new sst.Secret("JWT_SECRET");
     const smtpUsername = new sst.Secret("SMTP_USER");
     const smtpPassword = new sst.Secret("SMTP_PASS");
     const adminEmail = new sst.Secret("ADMIN_USER");
