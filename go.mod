@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.43.2
 	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
+	github.com/caarlos0/env/v11 v11.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 )
 

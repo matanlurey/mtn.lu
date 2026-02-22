@@ -46,8 +46,6 @@ export default $config({
       architecture: "arm64",
       link: [usersTable, linksTable],
       environment: {
-        USERS_TABLE: usersTable.name,
-        LINKS_TABLE: linksTable.name,
         JWT_SECRET: jwtSecret.value,
         BASE_URL: "https://mtn.lu",
         SMTP_HOST: "email-smtp.us-west-1.amazonaws.com",
