@@ -54,3 +54,19 @@ db-reset:
 run:
     #!/usr/bin/env bash
     go run main.go
+
+# Deploy to AWS (production)
+deploy-prod:
+    sst deploy --stage production
+
+# Remove all AWS resources for production stage
+destroy-prod:
+    sst remove --stage production
+
+# Deploy to a personal dev stage on AWS (for testing)
+deploy-dev:
+    sst deploy --stage dev
+
+# Remove all AWS resources for the dev stage
+destroy-dev:
+    sst remove --stage dev
