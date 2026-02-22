@@ -36,7 +36,7 @@ export default $config({
       handler: ".",
       architecture: "arm64",
       vpc,
-      link: [db, jwtSecret],
+      link: [db, jwtSecret, smtpUsername, smtpPassword],
       environment: {
         DATABASE_URL: $interpolate`postgres://postgres:${dbPassword.value}@${db.host}:${db.port}/mtn_lu`,
         JWT_SECRET: jwtSecret.value,
@@ -49,8 +49,20 @@ export default $config({
       },
     });
 
+    const router = new sst.aws.Router("MainRouter", {
+      domain: {
+        name: "mtn.lu",
+        dns: sst.aws.dns({
+          zone: "Z0125700X20H5J25WPI0",
+        }),
+      },
+      routes: {
+        "/*": authFn.url,
+      },
+    });
+
     return {
-      authUrl: authFn.url,
+      url: router.url,
       dbHost: db.host,
       dbPort: db.port,
     };
