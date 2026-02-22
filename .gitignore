@@ -1,3 +1,6 @@
 # Local dev data
 .dev/
 .sst/
+
+# Build output
+dist/

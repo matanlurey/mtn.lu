@@ -1,27 +1,10 @@
 services:
-  postgres:
-    image: postgres:latest
-    container_name: mtn-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: mtn_lu
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: mtn-dynamodb
     ports:
-      - "5432:5432"
-    volumes:
-      - ./.dev/postgres:/var/lib/postgresql
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: mtn-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@mtn.lu
-      PGADMIN_DEFAULT_PASSWORD: password123
-    ports:
-      - "5050:80"
-    volumes:
-      - ./.dev/pgadmin:/var/lib/pgadmin
-      - ./pgadmin-servers.json:/pgadmin4/servers.json
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb"
 
   mailpit:
     image: axllent/mailpit

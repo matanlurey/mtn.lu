@@ -14,20 +14,28 @@ export default $config({
 
   async run() {
     const jwtSecret = new sst.Secret("JwtSecret");
-    const dbPassword = new sst.Secret("DbPassword");
     const smtpUsername = new sst.Secret("SMTP_USER");
     const smtpPassword = new sst.Secret("SMTP_PASS");
     const adminEmail = new sst.Secret("ADMIN_USER");
 
-    const vpc = new sst.aws.Vpc("MainVpc", { nat: "ec2" });
+    const usersTable = new sst.aws.Dynamo("UsersTable", {
+      fields: {
+        email: "string",
+      },
+      primaryIndex: { hashKey: "email" },
+    });
 
-    const db = new sst.aws.Postgres("MainDb", {
-      vpc,
-      database: "mtn_lu",
-      username: "postgres",
-      password: dbPassword.value,
-      instance: "t4g.micro",
-      version: "16.12",
+    const linksTable = new sst.aws.Dynamo("LinksTable", {
+      fields: {
+        token: "string",
+        email: "string",
+        createdAt: "string",
+      },
+      primaryIndex: { hashKey: "token" },
+      globalIndexes: {
+        "email-index": { hashKey: "email", rangeKey: "createdAt" },
+      },
+      ttl: "expiresAt",
     });
 
     const authFn = new sst.aws.Function("AuthFn", {
@@ -36,10 +44,10 @@ export default $config({
       runtime: "go",
       handler: ".",
       architecture: "arm64",
-      vpc,
-      link: [db, jwtSecret, smtpUsername, smtpPassword, adminEmail],
+      link: [usersTable, linksTable],
       environment: {
-        DATABASE_URL: $interpolate`postgres://postgres:${dbPassword.value}@${db.host}:${db.port}/mtn_lu`,
+        USERS_TABLE: usersTable.name,
+        LINKS_TABLE: linksTable.name,
         JWT_SECRET: jwtSecret.value,
         BASE_URL: "https://mtn.lu",
         SMTP_HOST: "email-smtp.us-west-1.amazonaws.com",
@@ -65,8 +73,6 @@ export default $config({
 
     return {
       url: router.url,
-      dbHost: db.host,
-      dbPort: db.port,
     };
   },
 });
