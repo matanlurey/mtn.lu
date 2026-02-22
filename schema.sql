@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS magic_links (
 );
 
 -- Seed data for testing
-INSERT INTO users (email) VALUES ('matan@lurey.org')
+INSERT INTO users (email) VALUES ('matan@lurey.org'), ('sarah.amarragy@gmail.com')
 ON CONFLICT (email) DO NOTHING;
