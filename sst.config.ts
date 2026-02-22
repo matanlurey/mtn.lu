@@ -17,6 +17,7 @@ export default $config({
     const dbPassword = new sst.Secret("DbPassword");
     const smtpUsername = new sst.Secret("SMTP_USER");
     const smtpPassword = new sst.Secret("SMTP_PASS");
+    const adminEmail = new sst.Secret("ADMIN_USER");
 
     const vpc = new sst.aws.Vpc("MainVpc", { nat: "ec2" });
 
@@ -36,13 +37,14 @@ export default $config({
       handler: ".",
       architecture: "arm64",
       vpc,
-      link: [db, jwtSecret, smtpUsername, smtpPassword],
+      link: [db, jwtSecret, smtpUsername, smtpPassword, adminEmail],
       environment: {
         DATABASE_URL: $interpolate`postgres://postgres:${dbPassword.value}@${db.host}:${db.port}/mtn_lu`,
         JWT_SECRET: jwtSecret.value,
         BASE_URL: "https://mtn.lu",
         SMTP_HOST: "email-smtp.us-west-1.amazonaws.com",
         SMTP_PORT: "587",
+        ADMIN_USER: adminEmail.value,
         SMTP_FROM: "no-reply@mtn.lu",
         SMTP_USER: smtpUsername.value,
         SMTP_PASS: smtpPassword.value,
