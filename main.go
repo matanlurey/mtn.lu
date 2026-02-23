@@ -26,16 +26,13 @@ import (
 
 const PermAdmin = 1
 
-const (
-	usersTable = "users"
-	linksTable = "links"
-)
-
 type Config struct {
-	Port      int    `env:"PORT" envDefault:"8080"`
-	JWTSecret string `env:"JWT_SECRET" envDefault:"dev_secret_do_not_use_in_prod"`
-	BaseURL   string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	AdminUser string `env:"ADMIN_USER" envDefault:"admin@mtn.lu"`
+	Port       int    `env:"PORT" envDefault:"8080"`
+	JWTSecret  string `env:"JWT_SECRET" envDefault:"dev_secret_do_not_use_in_prod"`
+	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	UsersTable string `env:"USERS_TABLE" envDefault:"users"`
+	LinksTable string `env:"LINKS_TABLE" envDefault:"links"`
+	AdminUser  string `env:"ADMIN_USER" envDefault:"admin@mtn.lu"`
 	SMTPHost  string `env:"SMTP_HOST" envDefault:"localhost"`
 	SMTPPort  string `env:"SMTP_PORT" envDefault:"1025"`
 	SMTPUser  string `env:"SMTP_USER"`
@@ -106,7 +103,7 @@ func ensureAdminUser(ctx context.Context, client *dynamodb.Client, cfg Config) {
 	}
 	now := time.Now().Format(time.RFC3339)
 	_, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName:        aws.String(usersTable),
+		TableName:        aws.String(cfg.UsersTable),
 		Key:              map[string]types.AttributeValue{"email": &types.AttributeValueMemberS{Value: cfg.AdminUser}},
 		UpdateExpression: aws.String("SET #perm = :perm, createdAt = if_not_exists(createdAt, :now)"),
 		ExpressionAttributeNames: map[string]string{
@@ -234,35 +231,35 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
-		user, _ := getUserByEmail(r.Context(), client, usersTable, email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, email)
 		if user == nil {
 			pageTmpl.Execute(w, PageData{Error: "Invite-only system."})
 			return
 		}
-		if cool, _ := checkCooldown(r.Context(), client, linksTable, email); cool {
+		if cool, _ := checkCooldown(r.Context(), client, cfg.LinksTable, email); cool {
 			pageTmpl.Execute(w, PageData{Error: "Wait a minute."})
 			return
 		}
 		token := generateToken()
-		createMagicLink(r.Context(), client, linksTable, email, token, time.Now().Add(15*time.Minute))
+		createMagicLink(r.Context(), client, cfg.LinksTable, email, token, time.Now().Add(15*time.Minute))
 		sendMagicLinkEmail(cfg, email, fmt.Sprintf("%s/verify?token=%s", cfg.BaseURL, token))
 		pageTmpl.Execute(w, PageData{Message: "Check email."})
 	})
 
 	mux.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
-		ml, _ := getMagicLink(r.Context(), client, linksTable, token)
+		ml, _ := getMagicLink(r.Context(), client, cfg.LinksTable, token)
 		if ml == nil || ml.UsedAt != "" || time.Now().Unix() > ml.ExpiresAt {
 			pageTmpl.Execute(w, PageData{Error: "Invalid or expired link."})
 			return
 		}
 		client.UpdateItem(r.Context(), &dynamodb.UpdateItemInput{
-			TableName:                 aws.String(linksTable),
+			TableName:                 aws.String(cfg.LinksTable),
 			Key:                       map[string]types.AttributeValue{"token": &types.AttributeValueMemberS{Value: token}},
 			UpdateExpression:          aws.String("SET usedAt = :now"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{":now": &types.AttributeValueMemberS{Value: time.Now().Format(time.RFC3339)}},
 		})
-		user, _ := getUserByEmail(r.Context(), client, usersTable, ml.Email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, ml.Email)
 		jwtToken, _ := createJWT(user, cfg.JWTSecret)
 		http.SetCookie(w, &http.Cookie{Name: "token", Value: jwtToken, Path: "/", HttpOnly: true, MaxAge: 86400})
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -274,14 +271,14 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		users, _ := listAllUsers(r.Context(), client, usersTable)
+		users, _ := listAllUsers(r.Context(), client, cfg.UsersTable)
 		adminTmpl.Execute(w, AdminPageData{Email: email, Users: users})
 	})
 
 	mux.HandleFunc("/admin/add", func(w http.ResponseWriter, r *http.Request) {
 		email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 		client.PutItem(r.Context(), &dynamodb.PutItemInput{
-			TableName: aws.String(usersTable),
+			TableName: aws.String(cfg.UsersTable),
 			Item: map[string]types.AttributeValue{
 				"email":       &types.AttributeValueMemberS{Value: email},
 				"permissions": &types.AttributeValueMemberN{Value: "0"},
@@ -293,10 +290,10 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 
 	mux.HandleFunc("/admin/remove", func(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
-		user, _ := getUserByEmail(r.Context(), client, usersTable, email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, email)
 		if user != nil && !user.IsAdmin() {
 			client.DeleteItem(r.Context(), &dynamodb.DeleteItemInput{
-				TableName: aws.String(usersTable),
+				TableName: aws.String(cfg.UsersTable),
 				Key:       map[string]types.AttributeValue{"email": &types.AttributeValueMemberS{Value: email}},
 			})
 		}

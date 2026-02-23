@@ -48,12 +48,14 @@ export default $config({
       environment: {
         JWT_SECRET: jwtSecret.value,
         BASE_URL: "https://mtn.lu",
+        ADMIN_USER: adminEmail.value,
         SMTP_HOST: "email-smtp.us-west-1.amazonaws.com",
         SMTP_PORT: "587",
-        ADMIN_USER: adminEmail.value,
         SMTP_FROM: "no-reply@mtn.lu",
         SMTP_USER: smtpUsername.value,
         SMTP_PASS: smtpPassword.value,
+        USERS_TABLE: usersTable.name,
+        LINKS_TABLE: linksTable.name,
       },
     });
 
