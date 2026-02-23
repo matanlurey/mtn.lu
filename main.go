@@ -51,6 +51,7 @@ func main() {
 		DB:        database,
 		JWTSecret: cfg.JWTSecret,
 		BaseURL:   cfg.BaseURL,
+		Revision:  cfg.Revision,
 		SMTP: auth.SMTPConfig{
 			Host: cfg.SMTP.Host,
 			Port: cfg.SMTP.Port,

@@ -8,6 +8,8 @@ What it does:
 - Validates the JWT, and allows logging in/out
 - Admin users can invite additional users (i.e. adding their email address to the users list)
 
+[![Deploy](https://github.com/matanlurey/mtn.lu/actions/workflows/deploy.yml/badge.svg)](https://github.com/matanlurey/mtn.lu/actions/workflows/deploy.yml)
+
 ## Requirements
 
 - [Go](https://go.dev/dl/) (1.25+)

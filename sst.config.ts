@@ -2,6 +2,9 @@
 ///
 /// TIP: Use "sst install" to install the required dependencies for this file.
 
+import { execSync } from "child_process";
+const revision = execSync("git rev-parse --short HEAD").toString().trim();
+
 export default $config({
   app(input) {
     return {
@@ -56,6 +59,7 @@ export default $config({
         SMTP_PASS: smtpPassword.value,
         USERS_TABLE: usersTable.name,
         LINKS_TABLE: linksTable.name,
+        REVISION: revision,
       },
     });
 

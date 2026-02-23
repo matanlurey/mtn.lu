@@ -9,6 +9,7 @@ func loadConfigFromEnv() Config {
 }
 
 type Config struct {
+	Revision  string `env:"REVISION" envDefault:"unknown"`
 	Port      int    `env:"PORT" envDefault:"8080"`
 	BaseURL   string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	AdminUser string `env:"ADMIN_USER" envDefault:"admin@mtn.lu"`

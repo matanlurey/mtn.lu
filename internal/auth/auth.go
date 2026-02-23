@@ -16,11 +16,6 @@ import (
 	"mtn.lu/landing/internal/db"
 )
 
-var (
-	// Revision is injected at build time via ldflags
-	Revision = "dev"
-)
-
 //go:embed templates/page.html
 var pageHTML string
 var pageTmpl = template.Must(template.New("page").Parse(pageHTML))
@@ -38,6 +33,7 @@ type Handler struct {
 	JWTSecret string
 	BaseURL   string
 	SMTP      SMTPConfig
+	Revision  string
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -49,7 +45,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request) {
 	data := PageData{
-		Revision: Revision,
+		Revision: h.Revision,
 	}
 	if email, perm, ok := getUserFromJWT(r, h.JWTSecret); ok {
 		data.LoggedIn, data.Email, data.IsAdmin = true, email, perm&db.PermAdmin != 0

@@ -53,8 +53,7 @@ db-reset:
 # Run main.go
 run:
     #!/usr/bin/env bash
-    REV=$(git rev-parse --short HEAD)
-    DYNAMODB_URL=http://localhost:8000 go run -ldflags "-X mtn.lu/landing/internal/auth.Revision=$REV" .
+    DYNAMODB_URL=http://localhost:8000 REVISION=$(git rev-parse --short HEAD) go run .
 
 # Deploy to AWS (production)
 deploy-prod:
