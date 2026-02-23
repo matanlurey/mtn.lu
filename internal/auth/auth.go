@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/golang-jwt/jwt/v5"
 
 	"mtn.lu/landing/internal/db"
@@ -30,12 +29,10 @@ type SMTPConfig struct {
 }
 
 type Handler struct {
-	Client     *dynamodb.Client
-	UsersTable string
-	LinksTable string
-	JWTSecret  string
-	BaseURL    string
-	SMTP       SMTPConfig
+	DB        *db.DB
+	JWTSecret string
+	BaseURL   string
+	SMTP      SMTPConfig
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -56,19 +53,19 @@ func (h *Handler) handleHome(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
-	user, _ := db.GetUserByEmail(r.Context(), h.Client, h.UsersTable, email)
+	user, _ := h.DB.GetUserByEmail(r.Context(), email)
 	if user == nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		pageTmpl.Execute(w, PageData{Error: "Invite-only system."})
 		return
 	}
-	if cool, _ := db.CheckCooldown(r.Context(), h.Client, h.LinksTable, email); cool {
+	if cool, _ := h.DB.CheckCooldown(r.Context(), email); cool {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		pageTmpl.Execute(w, PageData{Error: "Wait a minute."})
 		return
 	}
 	token := generateToken()
-	db.CreateMagicLink(r.Context(), h.Client, h.LinksTable, email, token, time.Now().Add(15*time.Minute))
+	h.DB.CreateMagicLink(r.Context(), email, token, time.Now().Add(15*time.Minute))
 	link := fmt.Sprintf("%s/verify?token=%s", h.BaseURL, token)
 	h.sendMagicLinkEmail(email, link)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -77,14 +74,14 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	ml, _ := db.GetMagicLink(r.Context(), h.Client, h.LinksTable, token)
+	ml, _ := h.DB.GetMagicLink(r.Context(), token)
 	if ml == nil || ml.UsedAt != "" || time.Now().Unix() > ml.ExpiresAt {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		pageTmpl.Execute(w, PageData{Error: "Invalid or expired link."})
 		return
 	}
-	db.MarkMagicLinkUsed(r.Context(), h.Client, h.LinksTable, token)
-	user, _ := db.GetUserByEmail(r.Context(), h.Client, h.UsersTable, ml.Email)
+	h.DB.MarkMagicLinkUsed(r.Context(), token)
+	user, _ := h.DB.GetUserByEmail(r.Context(), ml.Email)
 	jwtToken, _ := createJWT(user, h.JWTSecret)
 	http.SetCookie(w, &http.Cookie{Name: "token", Value: jwtToken, Path: "/", HttpOnly: true, MaxAge: 86400})
 	http.Redirect(w, r, "/", http.StatusSeeOther)

@@ -39,19 +39,18 @@ func createDynamoClient(cfg DynamoDBConfig) *dynamodb.Client {
 func main() {
 	cfg := loadConfigFromEnv()
 	client := createDynamoClient(cfg.DynamoDB)
+	database := db.New(client, cfg.DynamoDB.UsersTable, cfg.DynamoDB.LinksTable)
 
-	if err := db.EnsureAdminUser(context.Background(), client, cfg.DynamoDB.UsersTable, cfg.AdminUser); err != nil {
+	if err := database.EnsureAdminUser(context.Background(), cfg.AdminUser); err != nil {
 		log.Fatalf("Failed to ensure admin user: %v", err)
 	}
 
 	mux := http.NewServeMux()
 
-	authHandler := &auth.Handler{
-		Client:     client,
-		UsersTable: cfg.DynamoDB.UsersTable,
-		LinksTable: cfg.DynamoDB.LinksTable,
-		JWTSecret:  cfg.JWTSecret,
-		BaseURL:    cfg.BaseURL,
+	(&auth.Handler{
+		DB:        database,
+		JWTSecret: cfg.JWTSecret,
+		BaseURL:   cfg.BaseURL,
 		SMTP: auth.SMTPConfig{
 			Host: cfg.SMTP.Host,
 			Port: cfg.SMTP.Port,
@@ -59,15 +58,12 @@ func main() {
 			Pass: cfg.SMTP.Pass,
 			From: cfg.SMTP.From,
 		},
-	}
-	authHandler.Register(mux)
+	}).Register(mux)
 
-	adminHandler := &admin.Handler{
-		Client:     client,
-		UsersTable: cfg.DynamoDB.UsersTable,
-		JWTSecret:  cfg.JWTSecret,
-	}
-	adminHandler.Register(mux)
+	(&admin.Handler{
+		DB:        database,
+		JWTSecret: cfg.JWTSecret,
+	}).Register(mux)
 
 	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
 		lambda.Start(httpadapter.NewV2(mux).ProxyWithContext)

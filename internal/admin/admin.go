@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/golang-jwt/jwt/v5"
 
 	"mtn.lu/landing/internal/db"
@@ -17,9 +16,8 @@ var adminHTML string
 var adminTmpl = template.Must(template.New("admin").Parse(adminHTML))
 
 type Handler struct {
-	Client     *dynamodb.Client
-	UsersTable string
-	JWTSecret  string
+	DB        *db.DB
+	JWTSecret string
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -34,7 +32,7 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	users, _ := db.ListAllUsers(r.Context(), h.Client, h.UsersTable)
+	users, _ := h.DB.ListAllUsers(r.Context())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	adminTmpl.Execute(w, AdminPageData{Email: email, Users: users})
 }
@@ -46,7 +44,7 @@ func (h *Handler) handleAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
-	db.AddUser(r.Context(), h.Client, h.UsersTable, email)
+	h.DB.AddUser(r.Context(), email)
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
@@ -57,9 +55,9 @@ func (h *Handler) handleRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := r.FormValue("email")
-	user, _ := db.GetUserByEmail(r.Context(), h.Client, h.UsersTable, email)
+	user, _ := h.DB.GetUserByEmail(r.Context(), email)
 	if user != nil && !user.IsAdmin() {
-		db.DeleteUser(r.Context(), h.Client, h.UsersTable, email)
+		h.DB.DeleteUser(r.Context(), email)
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
