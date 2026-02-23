@@ -337,7 +337,7 @@ func main() {
 	ensureAdminUser(context.Background(), client, cfg)
 	mux := http.NewServeMux()
 	registerRoutes(mux, cfg, client)
-	if cfg.IsLambda {
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
 		lambda.Start(httpadapter.NewV2(mux).ProxyWithContext)
 	} else {
 		addr := fmt.Sprintf(":%d", cfg.Port)
