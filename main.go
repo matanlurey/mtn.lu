@@ -69,7 +69,9 @@ func createDynamoClient(cfg DynamoDBConfig) *dynamodb.Client {
 		log.Fatalf("Failed to load AWS config: %v", err)
 	}
 	return dynamodb.NewFromConfig(awsCfg, func(o *dynamodb.Options) {
-		o.BaseEndpoint = aws.String(cfg.URL)
+		if cfg.URL != "" {
+			o.BaseEndpoint = aws.String(cfg.URL)
+		}
 	})
 }
 

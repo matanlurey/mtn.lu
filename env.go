@@ -28,7 +28,7 @@ type SMTPConfig struct {
 }
 
 type DynamoDBConfig struct {
-	URL        string `env:"DYNAMODB_URL" envDefault:"http://localhost:8000"`
+	URL        string `env:"DYNAMODB_URL" envDefault:""`
 	UsersTable string `env:"USERS_TABLE" envDefault:"users"`
 	LinksTable string `env:"LINKS_TABLE" envDefault:"links"`
 }

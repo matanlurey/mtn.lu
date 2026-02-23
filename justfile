@@ -53,7 +53,7 @@ db-reset:
 # Run main.go
 run:
     #!/usr/bin/env bash
-    go run .
+    DYNAMODB_URL=http://localhost:8000 go run .
 
 # Deploy to AWS (production)
 deploy-prod:
