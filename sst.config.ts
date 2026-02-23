@@ -2,8 +2,6 @@
 ///
 /// TIP: Use "sst install" to install the required dependencies for this file.
 
-import { execSync } from "child_process";
-const revision = execSync("git rev-parse --short HEAD").toString().trim();
 
 export default $config({
   app(input) {
@@ -40,6 +38,10 @@ export default $config({
       },
       ttl: "expiresAt",
     });
+
+
+    const execSync = await import("child_process").then(mod => mod.execSync);
+    const revision = execSync("git rev-parse --short HEAD").toString().trim();
 
     const authFn = new sst.aws.Function("AuthFn", {
       url: true,
