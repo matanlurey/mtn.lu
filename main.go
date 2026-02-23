@@ -20,25 +20,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
-	"github.com/caarlos0/env/v11"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 const PermAdmin = 1
-
-type Config struct {
-	Port       int    `env:"PORT" envDefault:"8080"`
-	JWTSecret  string `env:"JWT_SECRET" envDefault:"dev_secret_do_not_use_in_prod"`
-	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	UsersTable string `env:"USERS_TABLE" envDefault:"users"`
-	LinksTable string `env:"LINKS_TABLE" envDefault:"links"`
-	AdminUser  string `env:"ADMIN_USER" envDefault:"admin@mtn.lu"`
-	SMTPHost  string `env:"SMTP_HOST" envDefault:"localhost"`
-	SMTPPort  string `env:"SMTP_PORT" envDefault:"1025"`
-	SMTPUser  string `env:"SMTP_USER"`
-	SMTPPass  string `env:"SMTP_PASS"`
-	SMTPFrom  string `env:"SMTP_FROM" envDefault:"no-reply@mtn.lu"`
-}
 
 type User struct {
 	Email       string
@@ -71,13 +56,7 @@ type AdminPageData struct {
 	Error   string
 }
 
-func loadConfigFromEnv() Config {
-	var cfg Config
-	env.Parse(&cfg)
-	return cfg
-}
-
-func createDynamoClient() *dynamodb.Client {
+func createDynamoClient(cfg DynamoDBConfig) *dynamodb.Client {
 	ctx := context.Background()
 	isLocal := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") == ""
 	opts := []func(*awsconfig.LoadOptions) error{awsconfig.WithRegion("us-west-1")}
@@ -89,9 +68,7 @@ func createDynamoClient() *dynamodb.Client {
 		log.Fatalf("Failed to load AWS config: %v", err)
 	}
 	return dynamodb.NewFromConfig(awsCfg, func(o *dynamodb.Options) {
-		if isLocal {
-			o.BaseEndpoint = aws.String("http://localhost:8000")
-		}
+		o.BaseEndpoint = aws.String(cfg.URL)
 	})
 }
 
@@ -103,7 +80,7 @@ func ensureAdminUser(ctx context.Context, client *dynamodb.Client, cfg Config) {
 	}
 	now := time.Now().Format(time.RFC3339)
 	_, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName:        aws.String(cfg.UsersTable),
+		TableName:        aws.String(cfg.DynamoDB.UsersTable),
 		Key:              map[string]types.AttributeValue{"email": &types.AttributeValueMemberS{Value: cfg.AdminUser}},
 		UpdateExpression: aws.String("SET #perm = :perm, createdAt = if_not_exists(createdAt, :now)"),
 		ExpressionAttributeNames: map[string]string{
@@ -231,35 +208,35 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
-		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.DynamoDB.UsersTable, email)
 		if user == nil {
 			pageTmpl.Execute(w, PageData{Error: "Invite-only system."})
 			return
 		}
-		if cool, _ := checkCooldown(r.Context(), client, cfg.LinksTable, email); cool {
+		if cool, _ := checkCooldown(r.Context(), client, cfg.DynamoDB.LinksTable, email); cool {
 			pageTmpl.Execute(w, PageData{Error: "Wait a minute."})
 			return
 		}
 		token := generateToken()
-		createMagicLink(r.Context(), client, cfg.LinksTable, email, token, time.Now().Add(15*time.Minute))
+		createMagicLink(r.Context(), client, cfg.DynamoDB.LinksTable, email, token, time.Now().Add(15*time.Minute))
 		sendMagicLinkEmail(cfg, email, fmt.Sprintf("%s/verify?token=%s", cfg.BaseURL, token))
 		pageTmpl.Execute(w, PageData{Message: "Check email."})
 	})
 
 	mux.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
-		ml, _ := getMagicLink(r.Context(), client, cfg.LinksTable, token)
+		ml, _ := getMagicLink(r.Context(), client, cfg.DynamoDB.LinksTable, token)
 		if ml == nil || ml.UsedAt != "" || time.Now().Unix() > ml.ExpiresAt {
 			pageTmpl.Execute(w, PageData{Error: "Invalid or expired link."})
 			return
 		}
 		client.UpdateItem(r.Context(), &dynamodb.UpdateItemInput{
-			TableName:                 aws.String(cfg.LinksTable),
+			TableName:                 aws.String(cfg.DynamoDB.LinksTable),
 			Key:                       map[string]types.AttributeValue{"token": &types.AttributeValueMemberS{Value: token}},
 			UpdateExpression:          aws.String("SET usedAt = :now"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{":now": &types.AttributeValueMemberS{Value: time.Now().Format(time.RFC3339)}},
 		})
-		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, ml.Email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.DynamoDB.UsersTable, ml.Email)
 		jwtToken, _ := createJWT(user, cfg.JWTSecret)
 		http.SetCookie(w, &http.Cookie{Name: "token", Value: jwtToken, Path: "/", HttpOnly: true, MaxAge: 86400})
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -271,14 +248,14 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		users, _ := listAllUsers(r.Context(), client, cfg.UsersTable)
+		users, _ := listAllUsers(r.Context(), client, cfg.DynamoDB.UsersTable)
 		adminTmpl.Execute(w, AdminPageData{Email: email, Users: users})
 	})
 
 	mux.HandleFunc("/admin/add", func(w http.ResponseWriter, r *http.Request) {
 		email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 		client.PutItem(r.Context(), &dynamodb.PutItemInput{
-			TableName: aws.String(cfg.UsersTable),
+			TableName: aws.String(cfg.DynamoDB.UsersTable),
 			Item: map[string]types.AttributeValue{
 				"email":       &types.AttributeValueMemberS{Value: email},
 				"permissions": &types.AttributeValueMemberN{Value: "0"},
@@ -290,10 +267,10 @@ func registerRoutes(mux *http.ServeMux, cfg Config, client *dynamodb.Client) {
 
 	mux.HandleFunc("/admin/remove", func(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
-		user, _ := getUserByEmail(r.Context(), client, cfg.UsersTable, email)
+		user, _ := getUserByEmail(r.Context(), client, cfg.DynamoDB.UsersTable, email)
 		if user != nil && !user.IsAdmin() {
 			client.DeleteItem(r.Context(), &dynamodb.DeleteItemInput{
-				TableName: aws.String(cfg.UsersTable),
+				TableName: aws.String(cfg.DynamoDB.UsersTable),
 				Key:       map[string]types.AttributeValue{"email": &types.AttributeValueMemberS{Value: email}},
 			})
 		}
@@ -335,12 +312,12 @@ func getUserFromJWT(r *http.Request, secret string) (string, int, bool) {
 }
 
 func sendMagicLinkEmail(cfg Config, to, link string) error {
-	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: Login\r\n\r\nLink: %s", cfg.SMTPFrom, to, link)
+	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: Login\r\n\r\nLink: %s", cfg.SMTP.From, to, link)
 	var auth smtp.Auth
-	if cfg.SMTPUser != "" {
-		auth = smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPHost)
+	if cfg.SMTP.User != "" {
+		auth = smtp.PlainAuth("", cfg.SMTP.User, cfg.SMTP.Pass, cfg.SMTP.Host)
 	}
-	return smtp.SendMail(cfg.SMTPHost+":"+cfg.SMTPPort, auth, cfg.SMTPFrom, []string{to}, []byte(msg))
+	return smtp.SendMail(fmt.Sprintf("%s:%d", cfg.SMTP.Host, cfg.SMTP.Port), auth, cfg.SMTP.From, []string{to}, []byte(msg))
 }
 
 var pageTmpl = template.Must(template.New("page").Parse(`<!DOCTYPE html>
@@ -442,7 +419,7 @@ var adminTmpl = template.Must(template.New("admin").Parse(`<!DOCTYPE html>
 
 func main() {
 	cfg := loadConfigFromEnv()
-	client := createDynamoClient()
+	client := createDynamoClient(cfg.DynamoDB)
 	ensureAdminUser(context.Background(), client, cfg)
 	mux := http.NewServeMux()
 	registerRoutes(mux, cfg, client)
