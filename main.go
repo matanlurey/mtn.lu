@@ -46,6 +46,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	isLambda := os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != ""
 
 	(&auth.Handler{
 		DB:        database,
@@ -59,6 +60,7 @@ func main() {
 			Pass: cfg.SMTP.Pass,
 			From: cfg.SMTP.From,
 		},
+		IsLocalDev: !isLambda,
 	}).Register(mux)
 
 	(&admin.Handler{
@@ -66,7 +68,7 @@ func main() {
 		JWTSecret: cfg.JWTSecret,
 	}).Register(mux)
 
-	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+	if isLambda {
 		lambda.Start(httpadapter.NewV2(mux).ProxyWithContext)
 	} else {
 		addr := fmt.Sprintf(":%d", cfg.Port)

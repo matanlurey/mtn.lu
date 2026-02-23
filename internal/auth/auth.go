@@ -29,11 +29,12 @@ type SMTPConfig struct {
 }
 
 type Handler struct {
-	DB        *db.DB
-	JWTSecret string
-	BaseURL   string
-	SMTP      SMTPConfig
-	Revision  string
+	DB         *db.DB
+	JWTSecret  string
+	BaseURL    string
+	SMTP       SMTPConfig
+	Revision   string
+	IsLocalDev bool
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
@@ -75,6 +76,18 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	pageTmpl.Execute(w, PageData{Message: "Check email."})
 }
 
+func (h *Handler) setTokenCookie(w http.ResponseWriter, token string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Domain:   h.BaseURL[strings.Index(h.BaseURL, "://")+3:], // Extract domain from BaseURL
+		HttpOnly: true,                                          // Not accessible via JS
+		MaxAge:   maxAge,
+		Secure:   !h.IsLocalDev, // Only send over HTTPS in production
+	})
+}
+
 func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	ml, _ := h.DB.GetMagicLink(r.Context(), token)
@@ -86,12 +99,12 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	h.DB.MarkMagicLinkUsed(r.Context(), token)
 	user, _ := h.DB.GetUserByEmail(r.Context(), ml.Email)
 	jwtToken, _ := createJWT(user, h.JWTSecret)
-	http.SetCookie(w, &http.Cookie{Name: "token", Value: jwtToken, Path: "/", HttpOnly: true, MaxAge: 86400})
+	h.setTokenCookie(w, jwtToken, 24*3600*30 /* 30 days */)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: "token", Value: "", Path: "/", HttpOnly: true, MaxAge: -1})
+	h.setTokenCookie(w, "", -1)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
