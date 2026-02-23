@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	_ "embed"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -320,102 +321,13 @@ func sendMagicLinkEmail(cfg Config, to, link string) error {
 	return smtp.SendMail(fmt.Sprintf("%s:%d", cfg.SMTP.Host, cfg.SMTP.Port), auth, cfg.SMTP.From, []string{to}, []byte(msg))
 }
 
-var pageTmpl = template.Must(template.New("page").Parse(`<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<title>mtn.lu</title>
-	<style>
-		body { font-family: system-ui, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; }
-		h1 { margin-bottom: 4px; }
-		.subtitle { color: #666; margin-top: 0; }
-		form { margin-top: 20px; }
-		input[type="email"] { padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-		button { padding: 8px 16px; cursor: pointer; }
-		.message { color: green; margin-top: 16px; }
-		.error { color: red; margin-top: 16px; }
-	</style>
-</head>
-<body>
-	<h1>mtn.lu</h1>
-	<p class="subtitle">Invite-only microsites</p>
+//go:embed templates/page.html
+var pageHTML string
+var pageTmpl = template.Must(template.New("page").Parse(pageHTML))
 
-	{{if .LoggedIn}}
-		<p>Logged in as <strong>{{.Email}}</strong></p>
-		{{if .IsAdmin}}<p><a href="/admin">Manage users</a></p>{{end}}
-		<form method="POST" action="/logout">
-			<button type="submit">Log out</button>
-		</form>
-	{{else}}
-		<form method="POST" action="/login">
-			<label for="email">Email address</label>
-			<input type="email" id="email" name="email" placeholder="you@example.com" required>
-			<button type="submit">Send login link</button>
-		</form>
-	{{end}}
-
-	{{if .Message}}<p class="message">{{.Message}}</p>{{end}}
-	{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
-</body>
-</html>`))
-
-var adminTmpl = template.Must(template.New("admin").Parse(`<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<title>mtn.lu — Admin</title>
-	<style>
-		body { font-family: system-ui, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; }
-		h1 { margin-bottom: 4px; }
-		.subtitle { color: #666; margin-top: 0; }
-		table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-		th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
-		form.inline { display: inline; }
-		input[type="email"] { padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-		button { padding: 8px 16px; cursor: pointer; }
-		button.danger { background: #c0392b; color: white; border: none; }
-		button.danger:disabled { background: #ccc; color: #888; cursor: not-allowed; }
-		.message { color: green; margin-top: 16px; }
-		.error { color: red; margin-top: 16px; }
-		.back { margin-top: 20px; display: inline-block; }
-	</style>
-</head>
-<body>
-	<h1>mtn.lu</h1>
-	<p class="subtitle">User management</p>
-
-	{{if .Message}}<p class="message">{{.Message}}</p>{{end}}
-	{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
-
-	<h2>Add user</h2>
-	<form method="POST" action="/admin/add">
-		<input type="email" name="email" placeholder="user@example.com" required>
-		<button type="submit">Add</button>
-	</form>
-
-	<h2>Allowlisted users</h2>
-	<table>
-		<tr><th>Email</th><th></th></tr>
-		{{range .Users}}
-		<tr>
-			<td>{{.Email}}</td>
-			<td>
-				{{if .IsAdmin}}
-					<button class="danger" disabled title="Admin users cannot be removed">Remove</button>
-				{{else}}
-					<form class="inline" method="POST" action="/admin/remove">
-						<input type="hidden" name="email" value="{{.Email}}">
-						<button class="danger" type="submit" onclick="return confirm('Remove {{.Email}}?')">Remove</button>
-					</form>
-				{{end}}
-			</td>
-		</tr>
-		{{end}}
-	</table>
-
-	<a class="back" href="/">← Back</a>
-</body>
-</html>`))
+//go:embed templates/admin.html
+var adminHTML string
+var adminTmpl = template.Must(template.New("admin").Parse(adminHTML))
 
 func main() {
 	cfg := loadConfigFromEnv()
@@ -423,7 +335,7 @@ func main() {
 	ensureAdminUser(context.Background(), client, cfg)
 	mux := http.NewServeMux()
 	registerRoutes(mux, cfg, client)
-	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+	if cfg.IsLambda {
 		lambda.Start(httpadapter.NewV2(mux).ProxyWithContext)
 	} else {
 		addr := fmt.Sprintf(":%d", cfg.Port)

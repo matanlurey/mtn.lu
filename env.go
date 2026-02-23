@@ -9,6 +9,7 @@ func loadConfigFromEnv() Config {
 }
 
 type Config struct {
+	IsLambda  bool   `env:"AWS_LAMBDA_FUNCTION_NAME" envDefault:""`
 	Port      int    `env:"PORT" envDefault:"8080"`
 	BaseURL   string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	AdminUser string `env:"ADMIN_USER" envDefault:"admin@mtn.lu"`

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>mtn.lu</title>
+	<style>
+		body { font-family: system-ui, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; }
+		h1 { margin-bottom: 4px; }
+		.subtitle { color: #666; margin-top: 0; }
+		form { margin-top: 20px; }
+		input[type="email"] { padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+		button { padding: 8px 16px; cursor: pointer; }
+		.message { color: green; margin-top: 16px; }
+		.error { color: red; margin-top: 16px; }
+	</style>
+</head>
+<body>
+	<h1>mtn.lu</h1>
+	<p class="subtitle">Invite-only microsites</p>
+
+	{{if .LoggedIn}}
+		<p>Logged in as <strong>{{.Email}}</strong></p>
+		{{if .IsAdmin}}<p><a href="/admin">Manage users</a></p>{{end}}
+		<form method="POST" action="/logout">
+			<button type="submit">Log out</button>
+		</form>
+	{{else}}
+		<form method="POST" action="/login">
+			<label for="email">Email address</label>
+			<input type="email" id="email" name="email" placeholder="you@example.com" required>
+			<button type="submit">Send login link</button>
+		</form>
+	{{end}}
+
+	{{if .Message}}<p class="message">{{.Message}}</p>{{end}}
+	{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+</body>
+</html>
